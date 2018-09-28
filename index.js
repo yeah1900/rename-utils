@@ -2,15 +2,17 @@ const path = require('path');
 const fs = require('fs');
 
 const ENV = {
-    DRY_RUN_FLAG: true//!!process.ENV.DRY_RUN_FLAG
+    DRY_RUN_FLAG: process.env.DRY_RUN !== undefined ? process.env.DRY_RUN : true
 };
 
-const TARGET_PATTERN = new RegExp('^\\d{4}-\\d{2}-\\d{2} \\d{2}.\\d{2}.\\d{2}.(mp4|jpg)$');
+const TARGET_PATTERN = new RegExp('^\\d{4}-\\d{2}-\\d{2} \\d{2}.\\d{2}.\\d{2}.(mp4|jpg|heic|png)$');
 const FILE_MATCHERS = [
     {type: 'regex', pattern: '^B612咔叽_(\\d{4})(\\d{2})(\\d{2})_(\\d{2})(\\d{2})(\\d{2}).(mp4|jpg)$'},
     {type: 'regex', pattern: '^IMG_(\\d{4})(\\d{2})(\\d{2})_(\\d{2})(\\d{2})(\\d{2}).(mp4|jpg)$'},
     {type: 'regex', pattern: '^VID_(\\d{4})(\\d{2})(\\d{2})_(\\d{2})(\\d{2})(\\d{2}).(mp4|jpg)$'},
-    {type: 'timestamp', pattern: '^mmexport(\\d{13}).(mp4|jpg)$'},
+    {type: 'regex', pattern: '^(\\d{4})-(\\d{2})-(\\d{2}) (\\d{2})(\\d{2})(\\d{2}).(mp4|jpg|heic|png)$'},
+    {type: 'timestamp', pattern: '^mmexport(\\d{13}).(mp4|jpg|jpeg)$'},
+    {type: 'timestamp', pattern: '^microMsg.(\\d{13}).(mp4|jpg|jpeg)$'},
     {type: 'timestamp', pattern: '^wx_camera_(\\d{13}).(mp4|jpg)$'},
     {type: 'timestamp', pattern: '^(\\d{13}).(mp4|jpg)$'}
 ];
@@ -25,7 +27,7 @@ const to2Digits = number => {
 const normalize = name => {
     let normalizedName = null;
     FILE_MATCHERS.some(matcher => {
-        if (matcher.type === 'regexp') {
+        if (matcher.type === 'regex') {
             const matchResult = new RegExp(matcher.pattern).exec(name);
 
             if (matchResult) {
@@ -64,7 +66,8 @@ const renameFile = (folder, name, stats) => {
             const to = path.resolve(folder, normalize(name));
             console.log('renaming ', from, ' to ', to);
             stats.renamed++;
-            if (!ENV.DRY_RUN_FLAG) {
+            if (ENV.DRY_RUN_FLAG === 'false') {
+            	console.log('doing ', from, ' to ', to);
                 fs.renameSync(from, to);
             }
         } else {
@@ -103,3 +106,5 @@ console.log(summary);
 
 // TODO:
 // 1. rollback feature - record name mappings
+// 2. logger
+// 3. support more file patterns
